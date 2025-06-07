@@ -7,8 +7,10 @@ type Counter struct {
 	Character rune
 }
 
-func GenerateFrequency(content string) []Counter {
-	var counterMap map[rune]int
+type CounterMap map[rune]int
+
+func GenerateFrequency(content string) ([]Counter, CounterMap) {
+	var counterMap CounterMap
 	counterMap = make(map[rune]int)
 	for _, ch := range content {
 		counterMap[ch]++
@@ -23,5 +25,5 @@ func GenerateFrequency(content string) []Counter {
 		return counter[i].Frequency < counter[j].Frequency
 	})
 
-	return counter
+	return counter, counterMap
 }

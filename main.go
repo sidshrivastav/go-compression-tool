@@ -20,7 +20,7 @@ func main() {
 	}
 
 	// fmt.Println(string(file))
-	frequencies := GenerateFrequency(string(file))
+	frequencies, _ := GenerateFrequency(string(file))
 	for _, character := range frequencies {
 		fmt.Printf("%q: %d\n", character.Character, character.Frequency)
 	}

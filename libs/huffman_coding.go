@@ -63,6 +63,7 @@ func BuildHuffmanTree(freqMap map[rune]int) *HuffmanNode {
 	return heap.Pop(&pq).(*HuffmanNode)
 }
 
+// GeneratePrefixCodeTable generate prefix code table from huffman binary tree
 func GeneratePrefixCodeTable(root *HuffmanNode) map[rune]string {
 	table := make(map[rune]string)
 

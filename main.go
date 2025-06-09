@@ -4,6 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"os"
+
+	huffman_coding "go-compression-tool/libs"
 )
 
 func main() {
@@ -19,9 +21,16 @@ func main() {
 		fmt.Println("Error opening file:", err)
 	}
 
-	// fmt.Println(string(file))
-	frequencies, _ := GenerateFrequency(string(file))
-	for _, character := range frequencies {
-		fmt.Printf("%q: %d\n", character.Character, character.Frequency)
+	// Step 1: Calculate each character frequencies
+	frequencies := huffman_coding.GenerateFrequencyMap(string(file))
+	
+	// Step 2: Generate binary tree based on frequencies
+	huffmanTreeRoot := huffman_coding.BuildHuffmanTree(frequencies)
+	
+	// Step 3: Generate prefix code table from huffman tree
+	prefixCodeTable := huffman_coding.GeneratePrefixCodeTable(huffmanTreeRoot)
+
+	for ch, prefix := range prefixCodeTable {
+		fmt.Printf("%c %s\n", ch, prefix)
 	}
 }

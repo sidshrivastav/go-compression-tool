@@ -13,6 +13,8 @@ import (
 func main() {
 	// --- Command Line Argument Parsing ---
 	filePtr := flag.String("file", "", "Path to the input file")
+	compressFlag := flag.Bool("compress", false, "Compress the input file")
+	decompressFlag := flag.Bool("decompress", false, "Decompress the input file")
 	flag.Parse()
 
 	if *filePtr == "" {
@@ -21,31 +23,51 @@ func main() {
 		return
 	}
 
-	file, err := os.ReadFile(*filePtr)
-	if err != nil {
-		fmt.Println("Error opening file:", err)
+	if *compressFlag && *decompressFlag {
+		fmt.Println("Error: Please specify only one of -compress or -decompress")
 		return
 	}
 
-	// Automatically generate output filename: same name with .bin extension
-	baseName := filepath.Base(*filePtr)
+	if *compressFlag {
+		err := compressFile(*filePtr)
+		if err != nil {
+			fmt.Println("Compression failed:", err)
+		}
+		return
+	}
+
+	if *decompressFlag {
+		fmt.Println("To be implemented!")
+		// err := decompressFile(*filePtr)
+		// if err != nil {
+		// 	fmt.Println("Decompression failed:", err)
+		// }
+		return
+	}
+
+	fmt.Println("Error: You must specify either -compress or -decompress")
+	flag.Usage()
+}
+
+func compressFile(filePath string) error {
+	file, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("error reading file: %w", err)
+	}
+
+	baseName := filepath.Base(filePath)
 	ext := filepath.Ext(baseName)
 	outputFileName := strings.TrimSuffix(baseName, ext) + ".bin"
 
-	// Step 1: Calculate character frequencies
+	// Step 1–3: Frequency, tree, prefix codes
 	frequencies := huffman_coding.GenerateFrequencyMap(string(file))
-
-	// Step 2: Build Huffman Tree
 	huffmanTreeRoot := huffman_coding.BuildHuffmanTree(frequencies)
-
-	// Step 3: Generate prefix code table
 	prefixCodeTable := huffman_coding.GeneratePrefixCodeTable(huffmanTreeRoot)
 
-	// Step 4: Prepare output file
+	// Step 4: Output file
 	encodingFile, err := os.OpenFile(outputFileName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
-		fmt.Println("Error opening file for writing:", err)
-		return
+		return fmt.Errorf("error creating output file: %w", err)
 	}
 	defer encodingFile.Close()
 
@@ -59,10 +81,12 @@ func main() {
 	}
 	encodingFile.WriteString("--- Header-End ---\n")
 
-	// Step 5: Encode file content using bit-level Huffman encoding
+	// Compress content
 	err = huffman_coding.CompressFile(string(file), prefixCodeTable, encodingFile)
 	if err != nil {
-		fmt.Print(err)
+		return err
 	}
+
 	fmt.Printf("✅ Compressed file saved as: %s\n", outputFileName)
+	return nil
 }

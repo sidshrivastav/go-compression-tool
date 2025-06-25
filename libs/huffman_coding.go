@@ -1,7 +1,10 @@
 package huffman_coding
 
 import (
+	"bytes"
 	"container/heap"
+	"fmt"
+	"os"
 	"strings"
 )
 
@@ -92,4 +95,58 @@ func GeneratePrefixCodeTable(root *HuffmanNode) map[rune]string {
 	}
 
 	return table
+}
+
+func CompressFile(content string, prefixCodeTable map[rune]string, encodingFile *os.File) error {
+	var bitBufferBuilder strings.Builder
+
+	// Convert each rune to its prefix code
+	for _, ch := range content {
+		code, ok := prefixCodeTable[ch]
+		if !ok {
+			return fmt.Errorf("character %q not found in prefixCodeTable", ch)
+		}
+		bitBufferBuilder.WriteString(code)
+	}
+
+	bitBuffer := bitBufferBuilder.String()
+
+	// Padding to make it byte-aligned
+	padding := (8 - len(bitBuffer)%8) % 8
+	bitBuffer += strings.Repeat("0", padding)
+
+	// Write padding info
+	_, err := encodingFile.WriteString(fmt.Sprintf("Padding:%d\n", padding))
+	if err != nil {
+		return err
+	}
+	_, err = encodingFile.WriteString("--- Encoding-Start ---\n")
+	if err != nil {
+		return err
+	}
+
+	// Convert bit string to raw bytes
+	var byteBuffer bytes.Buffer
+	for i := 0; i < len(bitBuffer); i += 8 {
+		byteChunk := bitBuffer[i : i+8]
+		var b byte
+		for j := 0; j < 8; j++ {
+			if byteChunk[j] == '1' {
+				b |= 1 << (7 - j)
+			}
+		}
+		byteBuffer.WriteByte(b)
+	}
+
+	// Write encoded binary bytes
+	_, err = encodingFile.Write(byteBuffer.Bytes())
+	if err != nil {
+		return err
+	}
+	_, err = encodingFile.WriteString("\n--- Encoding-End ---\n")
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
